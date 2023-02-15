@@ -60,20 +60,56 @@ impl<const W: usize> Iterator for CoefficientState<W> {
     }
 }
 
+struct WeightState<const W: usize> {
+    values: [usize; W],
+    cap: usize,
+}
+
+impl<const W: usize> WeightState<W> {
+    pub fn new(cap: usize) -> WeightState<W> {
+        assert!(W != 0);
+        let mut val = WeightState { values: [0; W], cap };
+        for i in 0..W {
+            val.values[i] = i + 1;
+        }
+        return val;
+    }
+}
+
+impl<const W: usize> Iterator for WeightState<W> {
+    type Item = [usize; W];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.values[W - 1] >= self.cap {
+            return None;
+        }
+        let val = self.values;
+
+        for i in 0..W {
+            if i == W - 1 || self.values[i + 1] - self.values[i] > 1 {
+                self.values[i] += 1;
+                for j in 0..i {
+                    self.values[j] = j + 1;
+                }
+                break;
+            }
+        }
+
+        return Some(val);
+    }
+}
+
 fn brute_force_gadgets<const W: usize>(ω: usize) -> (usize, Vec<[usize; W]>) {
     assert!(W != 0);
     assert!(ω != 0);
 
-    let upper_bound = (2 * ω).pow(u32::try_from(W).unwrap() - 1);
-    let mut weights = [0; W];
-    for i in 0..W {
-        weights[i] = i + 1;
-    }
+    let upper_bound = 2 * (ω + 1).pow(u32::try_from(W).unwrap() - 1);
+
     let mut best_length = 0;
     let mut best_weights = vec![];
 
     let mut results = vec![];
-    while weights[W - 1] < upper_bound {
+    for weights in WeightState::<W>::new(upper_bound) {
         results.clear();
         results.resize(best_length + 1, false);
         'a: loop {
@@ -98,16 +134,6 @@ fn brute_force_gadgets<const W: usize>(ω: usize) -> (usize, Vec<[usize; W]>) {
                 }
             }
             results.resize(results.len() * 2, false);
-        }
-
-        for i in 0..W {
-            if i == W - 1 || weights[i + 1] - weights[i] > 1 {
-                weights[i] += 1;
-                for j in 0..i {
-                    weights[j] = j + 1;
-                }
-                break;
-            }
         }
     }
 
