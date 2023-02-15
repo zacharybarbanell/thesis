@@ -26,32 +26,32 @@ impl<const W: usize> Iterator for CoefficientState<W> {
             Ordering::Less => {
                 if self.values[0].is_negative() {
                     self.values[0] = -self.values[0];
-                }
-                else {
-                    self.values[0] = -1-self.values[0];
+                } else {
+                    self.values[0] = -1 - self.values[0];
                 }
             }
             Ordering::Equal => {
                 let mut i = 0;
                 loop {
                     match self.values[i].cmp(&0) {
-                        Ordering::Less => {self.values[i] = -self.values[i]; break;},
-                        Ordering::Equal => {i += 1},
+                        Ordering::Less => {
+                            self.values[i] = -self.values[i];
+                            break;
+                        }
+                        Ordering::Equal => i += 1,
                         Ordering::Greater => {
                             if i == W - 1 {
                                 self.values[i] += 1; //make future invocations return None
-                            }
-                            else {
+                            } else {
                                 self.values[i] = 0;
-                                if self.values[i+1].is_negative() {
-                                    self.values[i+1] = -self.values[i+1];
-                                }
-                                else {
-                                    self.values[i+1] = -1 -self.values[i+1];
+                                if self.values[i + 1].is_negative() {
+                                    self.values[i + 1] = -self.values[i + 1];
+                                } else {
+                                    self.values[i + 1] = -1 - self.values[i + 1];
                                 }
                             }
                             break;
-                        },
+                        }
                     }
                 }
             }
@@ -86,13 +86,12 @@ fn brute_force_gadgets<const W: usize>(ω: usize) -> (usize, Vec<[usize; W]>) {
                 }
             }
             for (i, v) in results.iter().enumerate() {
-                if !*v{
-                    if i-1 > best_length {
-                        best_length = i-1;
+                if !*v {
+                    if i - 1 > best_length {
+                        best_length = i - 1;
                         best_weights.clear();
                         best_weights.push(weights);
-                    }
-                    else if i-1 == best_length {
+                    } else if i - 1 == best_length {
                         best_weights.push(weights);
                     }
                     break 'a;
@@ -102,10 +101,10 @@ fn brute_force_gadgets<const W: usize>(ω: usize) -> (usize, Vec<[usize; W]>) {
         }
 
         for i in 0..W {
-            if i == W-1 || weights[i+1] - weights[i] > 1{
+            if i == W - 1 || weights[i + 1] - weights[i] > 1 {
                 weights[i] += 1;
                 for j in 0..i {
-                    weights[j] = j+1;
+                    weights[j] = j + 1;
                 }
                 break;
             }
