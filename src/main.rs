@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use std::{cmp::Ordering, iter::zip};
 
 struct CoefficientState<const W: usize> {
@@ -68,7 +69,10 @@ struct WeightState<const W: usize> {
 impl<const W: usize> WeightState<W> {
     pub fn new(cap: usize) -> WeightState<W> {
         assert!(W != 0);
-        let mut val = WeightState { values: [0; W], cap };
+        let mut val = WeightState {
+            values: [0; W],
+            cap,
+        };
         for i in 0..W {
             val.values[i] = i + 1;
         }
@@ -99,20 +103,34 @@ impl<const W: usize> Iterator for WeightState<W> {
     }
 }
 
-fn brute_force_gadgets<const W: usize>(ω: usize) -> (usize, Vec<[usize; W]>) {
+#[derive(Default, Debug)]
+struct Results<const W: usize> {
+    length: usize,
+    weights: Vec<[usize; W]>,
+}
+
+fn combine<const W: usize>(mut a: Results<W>, mut b: Results<W>) -> Results<W> {
+    match a.length.cmp(&b.length) {
+        Ordering::Less => b,
+        Ordering::Equal => {
+            a.weights.append(&mut b.weights);
+            a
+        }
+        Ordering::Greater => a,
+    }
+}
+
+fn brute_force_gadgets<const W: usize>(ω: usize) -> Results<W> {
     assert!(W != 0);
     assert!(ω != 0);
 
     let upper_bound = 2 * (ω + 1).pow(u32::try_from(W).unwrap() - 1);
 
-    let mut best_length = 0;
-    let mut best_weights = vec![];
-
-    let mut results = vec![];
-    for weights in WeightState::<W>::new(upper_bound) {
-        results.clear();
-        results.resize(best_length + 1, false);
-        'a: loop {
+    return WeightState::<W>::new(upper_bound)
+        .par_bridge()
+        .map(|weights| {
+            let mut results = vec![];
+            results.resize(weights[W - 1] * ω + 2, false);
             for coefficients in CoefficientState::<W>::new(ω) {
                 let result: isize = zip(weights, coefficients)
                     .map(|(x, y)| isize::try_from(x).unwrap() * y)
@@ -123,25 +141,25 @@ fn brute_force_gadgets<const W: usize>(ω: usize) -> (usize, Vec<[usize; W]>) {
             }
             for (i, v) in results.iter().enumerate() {
                 if !*v {
-                    if i - 1 > best_length {
-                        best_length = i - 1;
-                        best_weights.clear();
-                        best_weights.push(weights);
-                    } else if i - 1 == best_length {
-                        best_weights.push(weights);
-                    }
-                    break 'a;
+                    return Results {
+                        length: i - 1,
+                        weights: vec![weights],
+                    };
                 }
             }
-            results.resize(results.len() * 2, false);
-        }
-    }
-
-    return (best_length, best_weights);
+            unreachable!()
+        })
+        .reduce(
+            || Results {
+                length: 0,
+                weights: vec![],
+            },
+            combine,
+        );
 }
 
 fn main() {
     for i in 1..20 {
-        println!("{i}: {:?}", brute_force_gadgets::<3>(i));
+        println!("{i}: {:?}", brute_force_gadgets::<4>(i));
     }
 }
