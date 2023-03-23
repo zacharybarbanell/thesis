@@ -126,12 +126,14 @@ fn brute_force_gadgets<const W: usize>(ω: usize) -> Results<W> {
 
     let upper_bound = 2 * (ω + 1).pow(u32::try_from(W).unwrap() - 1);
 
+    let coeff: Vec<_> = CoefficientState::<W>::new(ω).collect();
+
     return WeightState::<W>::new(upper_bound)
         .par_bridge()
         .map(|weights| {
             let mut results = vec![];
             results.resize(weights[W - 1] * ω + 2, false);
-            for coefficients in CoefficientState::<W>::new(ω) {
+            for coefficients in &coeff {
                 let result: isize = zip(weights, coefficients)
                     .map(|(x, y)| (x as isize) * y)
                     .sum();
