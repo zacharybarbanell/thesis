@@ -133,10 +133,10 @@ fn brute_force_gadgets<const W: usize>(ω: usize) -> Results<W> {
             results.resize(weights[W - 1] * ω + 2, false);
             for coefficients in CoefficientState::<W>::new(ω) {
                 let result: isize = zip(weights, coefficients)
-                    .map(|(x, y)| isize::try_from(x).unwrap() * y)
+                    .map(|(x, y)| (x as isize) * y)
                     .sum();
                 if 0 <= result && result < results.len().try_into().unwrap() {
-                    results[usize::try_from(result).unwrap()] = true;
+                    results[result as usize] = true;
                 }
             }
             for (i, v) in results.iter().enumerate() {
